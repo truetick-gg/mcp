@@ -17,7 +17,7 @@ Add the following to your Claude Desktop config file (`%APPDATA%\Claude\claude_d
   "mcpServers": {
     "truetick": {
       "command": "npx",
-      "args": ["-y", "@truetick-gg/mcp"],
+      "args": ["-y", "@truetick/mcp"],
       "env": {
         "TRUETICK_API_KEY": "ttk_your_key_here"
       }
@@ -94,7 +94,7 @@ MIT — see [LICENSE](LICENSE).
 ## About this repository
 
 Development of TrueTick happens in a private monorepo; this repository mirrors
-released versions of `@truetick-gg/mcp`. Issues and discussions are welcome right
+released versions of `@truetick/mcp`. Issues and discussions are welcome right
 here — for code contributions, please propose the change in an issue first.
 
 Related: [TypeScript SDK & CLI](https://github.com/truetick-gg/truetick-js) ·
