@@ -35,7 +35,7 @@ describe("tools", () => {
 
     const expected = [
       "whoami", "list_servers", "get_wallet", "create_server",
-      "get_server", "get_server_metrics",
+      "get_server", "get_server_metrics", "get_server_tick_history",
       "start_server", "stop_server", "restart_server", "delete_server",
       "run_command", "update_server_version", "set_server_properties", "set_server_motd",
       "list_files", "read_file", "write_file", "delete_file",

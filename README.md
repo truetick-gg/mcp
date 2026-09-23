@@ -1,6 +1,8 @@
 # TrueTick MCP Server
 
-Manage TrueTick Minecraft servers directly from an AI agent. This MCP server exposes the full TrueTick public API as tools available to Claude and other compatible AI clients.
+Manage TrueTick Minecraft servers directly from an AI agent. This MCP server exposes **28 tools** covering the server-facing part of the TrueTick public API — lifecycle, console, metrics and tick history, files, backups, mods, templates and wallet — to Claude and other compatible AI clients.
+
+It is not the whole API: the public surface is 96 operations. Networks, capacity and regions have no tools here at all, and of the account-scoped operations only the wallet is covered (`get_wallet`) — the ledger, account limits and checkout links are not. For those, call the [REST API](https://docs.truetick.gg/api-reference) directly.
 
 ## Installation & Setup
 
@@ -54,11 +56,18 @@ The MCP server reads its configuration from environment variables:
 - **update_server_version** — Change the server type and/or version (server must be stopped).
 - **set_server_properties** — Update server.properties keys and optional idle timeout.
 - **set_server_motd** — Set the server's Message of the Day (MOTD).
+- **list_templates** — List the server templates (presets) you can create from.
+- **create_server_from_template** — Create a server from a template preset.
 
 ### Console & Metrics
 
 - **run_command** — Run a console (RCON) command on a running server.
-- **get_server_metrics** — Get live TPS/MSPT/player count metrics for a server.
+- **get_server_metrics** — Get live TPS/MSPT/player count metrics for a server. Read `tps`
+  together with `tpsSource`: `TPS_SOURCE_UNSPECIFIED` means there is no reading, not zero
+  performance.
+- **get_server_tick_history** — One-minute buckets of tick health (default 24h, max 720).
+  Minutes the server slept through have no row at all — a gap is a real gap, never a zero.
+- **get_recent_logs** — Fetch the most recent container log lines for a server (snapshot).
 
 ### File Management
 

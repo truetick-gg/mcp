@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.truetick-gg/mcp",
-  "description": "Manage TrueTick Minecraft servers from AI agents: create/start/stop servers, live TPS metrics, console, files, backups, mods.",
+  "description": "Manage TrueTick Minecraft servers from AI: start/stop, live TPS, console, files, backups, mods.",
   "repository": {
     "url": "https://github.com/truetick-gg/mcp",
     "source": "github"
@@ -12,10 +12,22 @@
       "registryType": "npm",
       "identifier": "@truetick/mcp",
       "version": "0.1.1",
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
-        { "name": "TRUETICK_API_KEY", "description": "TrueTick API key (ttk_…) from truetick.gg/dashboard/api-keys", "isRequired": true, "isSecret": true },
-        { "name": "TRUETICK_API_URL", "description": "API base URL (defaults to https://api.truetick.gg)", "isRequired": false, "isSecret": false }
+        {
+          "name": "TRUETICK_API_KEY",
+          "description": "TrueTick API key (ttk_\u2026) from truetick.gg/dashboard/api-keys",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "TRUETICK_API_URL",
+          "description": "API base URL (defaults to https://api.truetick.gg)",
+          "isRequired": false,
+          "isSecret": false
+        }
       ]
     }
   ]

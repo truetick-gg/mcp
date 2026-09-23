@@ -46,9 +46,18 @@ export function registerTools(server: McpServer, client: TruetickClient) {
     { serverId: z.string() },
     async ({ serverId }) => ok(await client.get(`/v1/servers/${encodeURIComponent(serverId)}`)));
 
-  server.tool("get_server_metrics", "Get live TPS/MSPT/player metrics for a server.",
+  server.tool("get_server_metrics",
+    "Get live TPS/MSPT/player metrics for a server. Read `tps` together with `tpsSource`: TPS_SOURCE_UNSPECIFIED means no reading exists (first poll after a start/wake, or an empty world parked by pause-when-empty) and `tps` is a zero value there, not zero performance. `tickStatus` is the core's own word about its loop.",
     { serverId: z.string() },
     async ({ serverId }) => ok(await client.get(`/v1/servers/${encodeURIComponent(serverId)}/metrics`)));
+
+  server.tool("get_server_tick_history",
+    "Get one-minute buckets of a server's tick health (TPS, mean/p95 MSPT, players, lagging, and how many polls each bucket rests on). Minutes the server slept through have no row at all — a gap is a real gap, never a zero.",
+    { serverId: z.string(), hours: z.number().int().optional() },
+    async ({ serverId, hours }) => {
+      const q = hours === undefined ? "" : `?hours=${encodeURIComponent(String(hours))}`;
+      return ok(await client.get(`/v1/servers/${encodeURIComponent(serverId)}/tick-history${q}`));
+    });
 
   server.tool("start_server", "Start a stopped Minecraft server.",
     { serverId: z.string() },
