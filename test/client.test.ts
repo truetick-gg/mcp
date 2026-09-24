@@ -27,6 +27,67 @@ describe("TruetickClient", () => {
   });
 });
 
+// A tool error's message is the only thing the agent sees (the MCP SDK turns
+// a thrown Error into {isError: true, content: [{text: error.message}]}), so
+// it has to carry the server's reason. It used to be a sentence invented from
+// the HTTP status: an empty wallet read "API error (HTTP 400).", a full node
+// read "Rate limited — slow down and retry shortly." (dev-01).
+describe("TruetickClient refusals", () => {
+  beforeEach(() => vi.restoreAllMocks());
+
+  const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
+
+  async function refusal(res: Response, call: (c: TruetickClient) => Promise<unknown>): Promise<Error> {
+    vi.stubGlobal("fetch", vi.fn(async () => res));
+    const err = await call(new TruetickClient("https://api.example", "ttk_abc")).then(() => undefined, (e) => e);
+    expect(err).toBeInstanceOf(Error);
+    return err as Error;
+  }
+
+  it("an empty-wallet refusal reaches the agent in the server's words, with its gRPC code", async () => {
+    const e = await refusal(json(400, { code: 9, message: "top up your wallet to start this server", details: [] }), (c) => c.post("/v1/servers/s1:start", {}));
+    expect(e.message).toBe("top up your wallet to start this server (HTTP 400, failed_precondition)");
+  });
+
+  it("a capacity refusal is not called a rate limit", async () => {
+    const e = await refusal(json(429, { code: 8, message: "node at capacity", details: [] }), (c) => c.post("/v1/servers/s1:start", {}));
+    expect(e.message).toBe("node at capacity (HTTP 429, resource_exhausted)");
+    expect(e.message).not.toMatch(/rate limited/i);
+  });
+
+  it("Retry-After tells the agent how long to wait", async () => {
+    const e = await refusal(json(429, { code: 8, message: "rate limit exceeded", details: [] }, { "retry-after": "2" }), (c) => c.get("/v1/servers/s1"));
+    expect(e.message).toBe("rate limit exceeded (HTTP 429, resource_exhausted; retry after 2s)");
+  });
+
+  // Date.parse reads "-5" and "+5" as 2001-04-30 and "1.5" as 2001-01-04, so a
+  // malformed header told the agent "retry after 0s" (pkg-05). A value that is
+  // neither delay-seconds nor an IMF-fixdate is left out of the message.
+  it("a Retry-After that is neither seconds nor an HTTP date is not passed on", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-23T12:00:00Z"));
+    try {
+      for (const v of ["-5", "+5", "1.5", "2026-09-23T12:00:30Z", "Wed Sep 23 12:00:30 2026", "Wed, 31 Feb 2026 12:00:30 GMT"]) {
+        const e = await refusal(json(429, { code: 8, message: "rate limit exceeded", details: [] }, { "retry-after": v }), (c) => c.get("/v1/servers/s1"));
+        expect([v, e.message]).toEqual([v, "rate limit exceeded (HTTP 429, resource_exhausted)"]);
+      }
+      const dated = await refusal(json(503, { code: 14, message: "unavailable", details: [] }, { "retry-after": "Wed, 23 Sep 2026 12:00:30 GMT" }), (c) => c.get("/v1/servers/s1"));
+      expect(dated.message).toBe("unavailable (HTTP 503, unavailable; retry after 30s)");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Every gateway 401 carries a message, so the status fallback that names
+  // TRUETICK_API_KEY never fires. The agent still has to learn where the key
+  // it was given comes from, or it can't tell the user what to fix.
+  it("a 401 names the setting to fix, not only the server's reason", async () => {
+    const e = await refusal(json(401, { code: 16, message: "invalid or missing api key", details: [] }), (c) => c.get("/v1/whoami"));
+    expect(e.message).toBe("invalid or missing api key (HTTP 401, unauthenticated) — check your TRUETICK_API_KEY (ttk_…)");
+  });
+});
+
 describe("create_server tool", () => {
   beforeEach(() => {
     vi.restoreAllMocks();

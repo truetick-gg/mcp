@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { TruetickClient } from "./client.js";
-import { registerTools } from "./tools.js";
+import { createServer } from "./server.js";
 
 const apiKey = process.env.TRUETICK_API_KEY;
 if (!apiKey) {
@@ -11,6 +10,5 @@ if (!apiKey) {
 }
 const baseUrl = process.env.TRUETICK_API_URL ?? "https://api.truetick.gg";
 
-const server = new McpServer({ name: "truetick", version: "0.1.0" });
-registerTools(server, new TruetickClient(baseUrl, apiKey));
+const server = createServer(new TruetickClient(baseUrl, apiKey));
 await server.connect(new StdioServerTransport());
