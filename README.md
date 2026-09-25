@@ -1,8 +1,8 @@
 # TrueTick MCP Server
 
-Manage TrueTick Minecraft servers directly from an AI agent. This MCP server exposes **28 tools** covering the server-facing part of the TrueTick public API — lifecycle, console, metrics and tick history, files, backups, mods, templates and wallet — to Claude and other compatible AI clients.
+Manage TrueTick Minecraft servers directly from an AI agent. This MCP server exposes **29 tools** covering the server-facing part of the TrueTick public API — lifecycle, console, metrics and tick history, files, backups, mods, templates and wallet — to Claude and other compatible AI clients.
 
-It is not the whole API: the public surface is 96 operations. Networks, capacity and regions have no tools here at all, and of the account-scoped operations only the wallet is covered (`get_wallet`) — the ledger, account limits and checkout links are not. For those, call the [REST API](https://docs.truetick.gg/api-reference) directly.
+It is not the whole API: the public surface is 97 operations. Networks, capacity and regions have no tools here at all, and of the account-scoped operations only the wallet is covered (`get_wallet`) — the ledger, account limits and checkout links are not. For those, call the [REST API](https://docs.truetick.gg/api-reference) directly.
 
 ## Installation & Setup
 
@@ -86,6 +86,7 @@ The MCP server reads its configuration from environment variables:
 
 - **list_mods** — List mods/plugins installed on the server.
 - **add_mod** — Add a mod or plugin from Modrinth or CurseForge.
+- **list_mod_versions** — List the builds of a mod or plugin that this server can pin (its loader and Minecraft version only, pre-releases included); pass one as `version` to `add_mod`.
 - **remove_mod** — Remove a mod or plugin from the server.
 
 ## Development

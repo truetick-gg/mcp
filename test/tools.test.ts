@@ -40,7 +40,7 @@ describe("tools", () => {
       "run_command", "update_server_version", "set_server_properties", "set_server_motd",
       "list_files", "read_file", "write_file", "delete_file",
       "create_backup", "list_backups", "restore_backup",
-      "list_mods", "add_mod", "remove_mod",
+      "list_mods", "add_mod", "list_mod_versions", "remove_mod",
       "list_templates", "create_server_from_template",
       "get_recent_logs",
     ];
@@ -122,6 +122,14 @@ describe("tools", () => {
       "/v1/servers/s1/mods",
       { source: "modrinth", projectId: "project-1" }
     );
+  });
+
+  it("list_mod_versions routes to GET /v1/servers/{id}/mods/versions", async () => {
+    const client = fakeClient();
+    const server = fakeServer();
+    registerTools(server as any, client as any);
+    await server.tools["list_mod_versions"]({ serverId: "s1", source: "modrinth", projectId: "59ZceYlU" });
+    expect(client.get).toHaveBeenCalledWith("/v1/servers/s1/mods/versions?source=modrinth&project_id=59ZceYlU");
   });
 
   it("list_templates routes to GET /v1/templates", async () => {

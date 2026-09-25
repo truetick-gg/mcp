@@ -149,6 +149,11 @@ export function registerTools(server: McpServer, client: TruetickClient) {
       return ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}/mods`, body));
     });
 
+  server.tool("list_mod_versions", "List the builds of a mod or plugin that this server can pin — its loader and Minecraft version only, pre-releases included, newest first. Pass a build's id as `version` to add_mod.",
+    { serverId: z.string(), source: z.string(), projectId: z.string() },
+    async ({ serverId, source, projectId }) =>
+      ok(await client.get(`/v1/servers/${encodeURIComponent(serverId)}/mods/versions?source=${encodeURIComponent(source)}&project_id=${encodeURIComponent(projectId)}`)));
+
   server.tool("remove_mod", "Remove a mod or plugin from the server.",
     { serverId: z.string(), source: z.string(), projectId: z.string() },
     async ({ serverId, source, projectId }) =>
