@@ -39,7 +39,7 @@ describe("tools", () => {
       "start_server", "stop_server", "restart_server", "delete_server",
       "run_command", "update_server_version", "set_server_properties", "set_server_motd",
       "list_files", "read_file", "write_file", "delete_file",
-      "create_backup", "list_backups", "restore_backup",
+      "create_backup", "list_backups", "restore_backup", "set_backup_kept",
       "list_mods", "add_mod", "list_mod_versions", "remove_mod",
       "list_templates", "create_server_from_template",
       "get_recent_logs",
@@ -48,6 +48,19 @@ describe("tools", () => {
       expect(Object.keys(server.tools)).toContain(name);
     }
     expect(Object.keys(server.tools).length).toBe(expected.length);
+  });
+
+  // Keep (R-N4 B9): the wanted state always goes in the body, true or false.
+  it("set_backup_kept posts the wanted state to :set-kept", async () => {
+    const client = fakeClient();
+    const server = fakeServer();
+    registerTools(server as any, client as any);
+    await server.tools["set_backup_kept"]({ serverId: "s 1", backupId: "b1", kept: true });
+    await server.tools["set_backup_kept"]({ serverId: "s 1", backupId: "b1", kept: false });
+    expect(client.post.mock.calls).toEqual([
+      ["/v1/servers/s%201/backups/b1:set-kept", { kept: true }],
+      ["/v1/servers/s%201/backups/b1:set-kept", { kept: false }],
+    ]);
   });
 
   it("list_servers routes to /v1/servers?account_id=acc-1", async () => {

@@ -1,8 +1,8 @@
 # TrueTick MCP Server
 
-Manage TrueTick Minecraft servers directly from an AI agent. This MCP server exposes **29 tools** covering the server-facing part of the TrueTick public API — lifecycle, console, metrics and tick history, files, backups, mods, templates and wallet — to Claude and other compatible AI clients.
+Manage TrueTick Minecraft servers directly from an AI agent. This MCP server exposes **30 tools** covering the server-facing part of the TrueTick public API — lifecycle, console, metrics and tick history, files, backups, mods, templates and wallet — to Claude and other compatible AI clients.
 
-It is not the whole API: the public surface is 97 operations. Networks, capacity and regions have no tools here at all, and of the account-scoped operations only the wallet is covered (`get_wallet`) — the ledger, account limits and checkout links are not. For those, call the [REST API](https://docs.truetick.gg/api-reference) directly.
+It is not the whole API: the public surface is 98 operations. Networks, capacity and regions have no tools here at all, and of the account-scoped operations only the wallet is covered (`get_wallet`) — the ledger, account limits and checkout links are not. For those, call the [REST API](https://docs.truetick.gg/api-reference) directly.
 
 ## Installation & Setup
 
@@ -81,6 +81,7 @@ The MCP server reads its configuration from environment variables:
 - **create_backup** — Create an on-demand backup of the server.
 - **list_backups** — List available backups for the server.
 - **restore_backup** — Restore a backup (server must be stopped; overwrites current data).
+- **set_backup_kept** — Keep a backup (`kept: true`) out of rotation until it is unkept, or put it back (`kept: false`). Up to 3 per server; kept backups count toward the server's backup space.
 
 ### Mods & Plugins
 

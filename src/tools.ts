@@ -136,6 +136,14 @@ export function registerTools(server: McpServer, client: TruetickClient) {
     async ({ serverId, backupId }) =>
       ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}/backups/${encodeURIComponent(backupId)}:restore`, {})));
 
+  // Keep (R-N4 B9): one tool, the wanted state explicit — the API refuses a
+  // request without it rather than unkeeping by default.
+  server.tool("set_backup_kept",
+    "Keep a backup (kept: true) out of rotation until it is unkept: retention and a snapshot's 72-hour expiry leave it, and it can't be deleted until unkept (deleting the server still deletes it). Up to 3 per server; kept backups count toward the server's backup space, so keeping a daily backup is refused when it would leave no room for the next safety snapshot. kept: false puts it back into rotation, where the server's next daily, manual or scheduled backup may delete it.",
+    { serverId: z.string(), backupId: z.string(), kept: z.boolean() },
+    async ({ serverId, backupId, kept }) =>
+      ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}/backups/${encodeURIComponent(backupId)}:set-kept`, { kept })));
+
   // Mods
   server.tool("list_mods", "List mods/plugins installed on the server.",
     { serverId: z.string() },
