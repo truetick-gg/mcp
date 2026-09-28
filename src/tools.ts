@@ -4,6 +4,13 @@ import type { TruetickClient } from "./client.js";
 import { getAccountId } from "./account.js";
 import { parseLabel, serverHostname, gameDomainFromBaseUrl } from "./naming.js";
 
+// File tools take a path the API resolves inside the server's folder
+// (files.CleanRel: a leading "/" and any ".." are refused).
+const dirPath = z.string().describe(
+  "A directory relative to the server's folder: \"\" for its root, \"plugins\", \"world/region\". A leading \"/\" and any \"..\" are refused.");
+const filePath = z.string().describe(
+  "A file relative to the server's folder: \"server.properties\", \"logs/latest.log\". A leading \"/\" and any \"..\" are refused.");
+
 const ok = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
 
 export function registerTools(server: McpServer, client: TruetickClient) {
@@ -84,11 +91,12 @@ export function registerTools(server: McpServer, client: TruetickClient) {
     async ({ serverId, type, version }) =>
       ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}:set-version`, { type, version })));
 
-  server.tool("set_server_properties", "Update server.properties keys and optional idle timeout.",
+  server.tool("set_server_properties",
+    "Change server.properties keys and optionally the idle-sleep timeout. Only the keys you send change; keys you leave out keep their stored value. Values apply on the server's next start.",
     {
       serverId: z.string(),
-      properties: z.record(z.string()),
-      idleTimeoutMinutes: z.number().int().optional(),
+      properties: z.record(z.string()).describe("server.properties keys to set, e.g. {\"max-players\": \"20\"}. A key sent as \"\" stops the platform setting it (server.properties keeps the last value written); level-name cannot be cleared."),
+      idleTimeoutMinutes: z.number().int().optional().describe("Minutes with no players before the server sleeps, 0-1440; 0 = the node's default. Omit to keep the current value."),
     },
     async ({ serverId, properties, idleTimeoutMinutes }) =>
       ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}:set-properties`, { properties, idleTimeoutMinutes })));
@@ -99,26 +107,32 @@ export function registerTools(server: McpServer, client: TruetickClient) {
       ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}:set-motd`, { motd })));
 
   // File operations
-  server.tool("list_files", "List files in a directory on the server.",
-    { serverId: z.string(), path: z.string() },
+  server.tool("list_files", "List one directory of a server's files: name, isDir, size and modTime (Unix seconds) of each entry. Not recursive.",
+    { serverId: z.string(), path: dirPath },
     async ({ serverId, path }) =>
       ok(await client.get(`/v1/servers/${encodeURIComponent(serverId)}/files?path=${encodeURIComponent(path)}`)));
 
-  server.tool("read_file", "Read the contents of a file on the server.",
-    { serverId: z.string(), path: z.string() },
-    async ({ serverId, path }) =>
-      ok(await client.get(`/v1/servers/${encodeURIComponent(serverId)}/file?path=${encodeURIComponent(path)}`)));
+  server.tool("read_file", "Read a text file of a server as UTF-8. A file larger than the platform returns inline is not read at all: the tool then says so instead of returning content.",
+    { serverId: z.string(), path: filePath },
+    async ({ serverId, path }) => {
+      // The API sends proto3 bytes as base64 (same decode as the panel and the SDK).
+      const r = await client.get(`/v1/servers/${encodeURIComponent(serverId)}/file?path=${encodeURIComponent(path)}`) as { content?: string; truncated?: boolean };
+      // Over the read cap the API returns truncated with NO content — never
+      // hand that on as an empty file.
+      if (r.truncated) throw new Error(`${path} is larger than the platform returns inline; nothing was read`);
+      return ok({ content: Buffer.from(r.content ?? "", "base64").toString("utf8") });
+    });
 
-  server.tool("write_file", "Write content to a file on the server (base64-encoded internally).",
-    { serverId: z.string(), path: z.string(), content: z.string() },
+  server.tool("write_file", "Write text content to a file on the server (base64-encoded internally).",
+    { serverId: z.string(), path: filePath, content: z.string() },
     async ({ serverId, path, content }) =>
       ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}/file`, {
         path,
         content: Buffer.from(content, "utf8").toString("base64"),
       })));
 
-  server.tool("delete_file", "DESTRUCTIVE: delete a file on the server.",
-    { serverId: z.string(), path: z.string() },
+  server.tool("delete_file", "DESTRUCTIVE: delete a file or directory on the server. A directory is deleted with everything in it; the server's root cannot be deleted.",
+    { serverId: z.string(), path: z.string().describe("Relative to the server's folder, e.g. \"plugins/Old.jar\". A leading \"/\" and any \"..\" are refused.") },
     async ({ serverId, path }) =>
       ok(await client.post(`/v1/servers/${encodeURIComponent(serverId)}/file:delete`, { path })));
 

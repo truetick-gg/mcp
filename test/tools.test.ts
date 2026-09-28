@@ -63,6 +63,26 @@ describe("tools", () => {
     ]);
   });
 
+  // The API sends file bytes as base64; the model must get the text.
+  it("read_file decodes the base64 content", async () => {
+    const client = fakeClient();
+    client.get.mockResolvedValueOnce({ content: Buffer.from("motd=hi\n").toString("base64"), truncated: false } as any);
+    const server = fakeServer();
+    registerTools(server as any, client as any);
+    const res = await server.tools["read_file"]({ serverId: "s1", path: "server.properties" });
+    expect(client.get).toHaveBeenCalledWith("/v1/servers/s1/file?path=server.properties");
+    expect(JSON.parse(res.content[0].text)).toEqual({ content: "motd=hi\n" });
+  });
+
+  // Over the read cap the API sends truncated with no content: say so, never "empty file".
+  it("read_file refuses a file too large to read inline", async () => {
+    const client = fakeClient();
+    client.get.mockResolvedValueOnce({ truncated: true } as any);
+    const server = fakeServer();
+    registerTools(server as any, client as any);
+    await expect(server.tools["read_file"]({ serverId: "s1", path: "logs/big.log" })).rejects.toThrow(/nothing was read/);
+  });
+
   it("list_servers routes to /v1/servers?account_id=acc-1", async () => {
     const client = fakeClient();
     const server = fakeServer();
